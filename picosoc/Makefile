@@ -76,11 +76,11 @@ icebreaker.bin: icebreaker.asc
 	icepack icebreaker.asc icebreaker.bin
 
 icebprog: icebreaker.bin icebreaker_fw.bin
-	iceprog icebreaker.bin
-	iceprog -o 1M icebreaker_fw.bin
+	icesprog icebreaker.bin
+	icesprog -o 0x100000 icebreaker_fw.bin
 
 icebprog_fw: icebreaker_fw.bin
-	iceprog -o 1M icebreaker_fw.bin
+	icesprog -o 0x100000 icebreaker_fw.bin
 
 icebreaker_sections.lds: sections.lds
 	$(CROSS)cpp -P -DICEBREAKER -o $@ $^
