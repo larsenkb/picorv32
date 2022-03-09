@@ -17,6 +17,7 @@
  *
  */
 
+
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -38,6 +39,11 @@ extern uint32_t sram;
 #define reg_leds (*(volatile uint32_t*)0x03000000)
 
 // --------------------------------------------------------
+void print(const char *p);
+void putchar(char c);
+void print_hex1(char v);
+void print_hex(uint32_t v, int digits);
+void print_dec(uint32_t v);
 
 extern uint32_t flashio_worker_begin;
 extern uint32_t flashio_worker_end;
@@ -111,6 +117,35 @@ void set_flash_mode_qddr()
 #endif
 
 #ifdef ICEBREAKER
+void print_spi_status(void)
+{
+	uint8_t buffer[8];
+	uint8_t sr1, sr2;
+
+	// Read Configuration Registers (RDCR1 35h)
+	buffer[0] = 0x05;
+	buffer[1] = 0x00; // rdata
+	buffer[2] = 0x00; // rdata
+	flashio(buffer, 2, 0);
+	sr1 = buffer[1];
+
+	buffer[0] = 0x06;
+	flashio(buffer, 2, 0);
+
+	buffer[0] = 0x05;
+	buffer[1] = 0x00; // rdata
+	flashio(buffer, 2, 0);
+
+	buffer[0] = 0x04;
+	flashio(buffer, 2, 0);
+
+//	uint8_t sr2 = buffer[1];
+	print("\n");
+	print_hex1(sr1);
+	print_hex1(buffer[1]);
+	print("\n");
+}
+
 void set_flash_qspi_flag()
 {
 	uint8_t buffer[8];
@@ -120,6 +155,9 @@ void set_flash_qspi_flag()
 	buffer[1] = 0x00; // rdata
 	flashio(buffer, 2, 0);
 	uint8_t sr2 = buffer[1];
+//	print("\n");
+//	print_hex1(sr2);
+//	print("\n");
 
 	// Write Enable Volatile (50h) + Write Status Register 2 (31h)
 	buffer[0] = 0x31;
@@ -166,6 +204,15 @@ void print(const char *p)
 {
 	while (*p)
 		putchar(*(p++));
+}
+
+void print_hex1(char v)
+{
+	char c;
+	c = "0123456789abcdef"[(v >> 4) & 0xf];
+	putchar(c);
+	c = "0123456789abcdef"[v & 0xf];
+	putchar(c);
 }
 
 void print_hex(uint32_t v, int digits)
@@ -220,11 +267,14 @@ void print_dec(uint32_t v)
 char getchar_prompt(char *prompt)
 {
 	int32_t c = -1;
+	uint32_t led_state;
 
 	uint32_t cycles_begin, cycles_now, cycles;
 	__asm__ volatile ("rdcycle %0" : "=r"(cycles_begin));
 
-	reg_leds = ~0;
+	//reg_leds = ~0;
+	led_state = 1;
+	reg_leds = led_state;
 
 	if (prompt)
 		print(prompt);
@@ -236,7 +286,11 @@ char getchar_prompt(char *prompt)
 			if (prompt)
 				print(prompt);
 			cycles_begin = cycles_now;
-			reg_leds = ~reg_leds;
+			//reg_leds = ~reg_leds;
+			reg_leds = 0;
+			led_state <<= 1;
+			if (led_state == 0x100) led_state = 1;
+			reg_leds = led_state;
 		}
 		c = reg_uart_data;
 	}
@@ -625,18 +679,18 @@ void cmd_benchmark_all()
 	print_hex(cmd_benchmark(false, &instns), 8);
 	putchar('\n');
 
-	// print("dual-crm  ");
-	// enable_flash_crm();
-	// print_hex(cmd_benchmark(false, &instns), 8);
-	// putchar('\n');
+print("dual-crm  ");
+enable_flash_crm();
+print_hex(cmd_benchmark(false, &instns), 8);
+putchar('\n');
 
-	print("quad      ");
-	set_flash_mode_quad();
-	print_hex(cmd_benchmark(false, &instns), 8);
-	putchar('\n');
+//	print("quad      ");
+//	set_flash_mode_quad();
+//	print_hex(cmd_benchmark(false, &instns), 8);
+//	putchar('\n');
 
 	print("quad-crm  ");
-	enable_flash_crm();
+	set_flash_mode_quad();
 	print_hex(cmd_benchmark(false, &instns), 8);
 	putchar('\n');
 
@@ -712,6 +766,7 @@ void main()
 		print("   [M] Run Memtest\n");
 		print("   [S] Print SPI state\n");
 		print("   [e] Echo UART\n");
+		print("   [t] Print SPI Status Regs\n");
 		print("\n");
 
 		for (int rep = 10; rep > 0; rep--)
@@ -759,6 +814,9 @@ void main()
 				break;
 			case 'e':
 				cmd_echo();
+				break;
+			case 't':
+				print_spi_status();
 				break;
 			default:
 				continue;
