@@ -2,8 +2,8 @@
 set_io clk        35
 
 # RS232
-set_io ser_rx      6
-set_io ser_tx      9
+set_io ser_rx      4
+set_io ser_tx      6 //9
 
 # SPI Flash
 set_io flash_clk  15
@@ -14,12 +14,12 @@ set_io flash_io2  12
 set_io flash_io3  13
 
 # LEDs (PMOD 2)
-set_io led1       27
-set_io led2       25
-set_io led3       21
-set_io led4       23
-set_io led5       26
+set_io led1       46 //27
+set_io led2       45 //25
+set_io led3       43 //21
+set_io led4       44 //23
+set_io led5       37 //26
 
 # Onboard LEDs
-set_io ledr_n     11
-set_io ledg_n     37
+set_io ledr_n     40 //11
+set_io ledg_n     41 //37
